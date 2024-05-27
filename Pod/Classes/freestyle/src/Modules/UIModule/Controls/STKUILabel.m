@@ -86,47 +86,44 @@ NSString *const kDefaultCacheLabelLineBreakMode = @"label.lineBreakMode";
     if (!objc_getAssociatedObject(self, &STYLE_CHILDREN))
     {
         __weak STKUILabel *weakSelf = self;
-        
+
         // attributed text
         PXVirtualStyleableControl *attributedText =
-                [[PXVirtualStyleableControl alloc] initWithParent:self
-                                                      elementName:@"attributed-text"
-                                            viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
-                // nothing for now
-        }];
-        
+        [[PXVirtualStyleableControl alloc] initWithParent:self
+                                              elementName:@"attributed-text"
+                                        viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
+                                            // nothing for now
+                                        }];
+
         attributedText.defaultPseudoClass = @"normal";
         attributedText.supportedPseudoClasses = PSEUDOCLASS_MAP.allKeys;
-        
-        attributedText.viewStylers = @[
-                                       
-            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(PXVirtualStyleableControl *styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
-                
-                UIControlState state = ([context stateFromStateNameMap:PSEUDOCLASS_MAP]) ?
-                    [context stateFromStateNameMap:PSEUDOCLASS_MAP] : UIControlStateNormal;
-                
-                NSString *text = weakSelf.text;
-                UIColor *stateColor = state == UIControlStateHighlighted ? weakSelf.highlightedTextColor :weakSelf.textColor;
-                
-                NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf withDefaultText:text andColor:stateColor];
-                 
-                 NSMutableAttributedString *attrString = nil; 
-                
-                 if(context.transformedText)
-                 {
-                     attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
-                 }
 
-                [self setAttributedText:attrString
-                     invalidateChildren:NO];
+        attributedText.viewStylers = @[
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXVirtualStyleableControl class]]) {
+                    UIControlState state = ([context stateFromStateNameMap:PSEUDOCLASS_MAP]) ? [context stateFromStateNameMap:PSEUDOCLASS_MAP] : UIControlStateNormal;
+
+                    NSString *text = weakSelf.text;
+                    UIColor *stateColor = state == UIControlStateHighlighted ? weakSelf.highlightedTextColor : weakSelf.textColor;
+
+                    NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf withDefaultText:text andColor:stateColor];
+
+                    NSMutableAttributedString *attrString = nil;
+
+                    if (context.transformedText) {
+                        attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
+                    }
+
+                    [weakSelf setAttributedText:attrString invalidateChildren:NO];
+                }
             }]
         ];
-        
+
         NSArray *styleChildren = @[ attributedText ];
-        
+
         objc_setAssociatedObject(self, &STYLE_CHILDREN, styleChildren, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    
+
     return objc_getAssociatedObject(self, &STYLE_CHILDREN);
 }
 
@@ -170,73 +167,83 @@ NSString *const kDefaultCacheLabelLineBreakMode = @"label.lineBreakMode";
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
-
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(STKUILabel *view, PXTextShadowStyler *styler, PXStylerContext *context) {
-                PXShadow *shadow = context.textShadow;
+            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUILabel class]]) {
+                    STKUILabel *view = (STKUILabel *)styleable;
+                    PXShadow *shadow = context.textShadow;
 
-                [view px_setShadowColor: shadow.color];
-                [view px_setShadowOffset: CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset)];
+                    [view px_setShadowColor:shadow.color];
+                    [view px_setShadowOffset:CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset)];
+                }
             }],
-            
-            [[PXFontStyler alloc] initWithCompletionBlock:^(STKUILabel *view, PXFontStyler *styler, PXStylerContext *context) {
-                [view px_setFont:context.font];
+
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUILabel class]]) {
+                    STKUILabel *view = (STKUILabel *)styleable;
+                    [view px_setFont:context.font];
+                }
             }],
-            
-            [[PXPaintStyler alloc] initWithCompletionBlock:^(STKUILabel *view, PXPaintStyler *styler, PXStylerContext *context) {
-                UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-                
-                if(color)
-                {
-                    if([context stateFromStateNameMap:PSEUDOCLASS_MAP] == UIControlStateHighlighted)
-                    {
-                        [view px_setHighlightedTextColor:color];
-                    }
-                    else
-                    {
-                        [view px_setTextColor:color];
+
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUILabel class]]) {
+                    STKUILabel *view = (STKUILabel *)styleable;
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+
+                    if (color) {
+                        if ([context stateFromStateNameMap:PSEUDOCLASS_MAP] == UIControlStateHighlighted) {
+                            [view px_setHighlightedTextColor:color];
+                        } else {
+                            [view px_setTextColor:color];
+                        }
                     }
                 }
             }],
-            
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(STKUILabel *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                [view px_setText:context.text];
+
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUILabel class]]) {
+                    STKUILabel *view = (STKUILabel *)styleable;
+                    [view px_setText:context.text];
+                }
             }],
-                
+
             [[PXGenericStyler alloc] initWithHandlers: @{
-                 @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                    STKUILabel *view = (STKUILabel *)context.styleable;
-                    
-                    [view px_setText:[declaration transformString:view.text]];
+                @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[STKUILabel class]]) {
+                        STKUILabel *view = (STKUILabel *)context.styleable;
+                        [view px_setText:[declaration transformString:view.text]];
+                    }
                 },
-                 @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                    STKUILabel *view = (STKUILabel *)context.styleable;
-
-                    [view px_setTextAlignment:declaration.textAlignmentValue];
+                @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[STKUILabel class]]) {
+                        STKUILabel *view = (STKUILabel *)context.styleable;
+                        [view px_setTextAlignment:declaration.textAlignmentValue];
+                    }
                 },
-                 @"text-overflow" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                    STKUILabel *view = (STKUILabel *)context.styleable;
-
-                    [view px_setLineBreakMode:declaration.lineBreakModeValue];
+                @"text-overflow" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[STKUILabel class]]) {
+                        STKUILabel *view = (STKUILabel *)context.styleable;
+                        [view px_setLineBreakMode:declaration.lineBreakModeValue];
+                    }
                 }
             }],
+
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

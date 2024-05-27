@@ -164,19 +164,19 @@ static NSDictionary *PSEUDOCLASS_MAP;
     if (!objc_getAssociatedObject(self, &STYLE_CHILDREN))
     {
         __weak PXUITextField *weakSelf = self;
-        
+
         // placeholder
         PXVirtualStyleableControl *placeholder = [[PXVirtualStyleableControl alloc] initWithParent:self elementName:@"placeholder" viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
 
             // Style placeholder
             NSMutableDictionary *currentPlaceholderTextAttributes = [context propertyValueForName:@"text-attributes"];
-            if(currentPlaceholderTextAttributes)
+            if (currentPlaceholderTextAttributes)
             {
                 NSString *placeholderText = [context propertyValueForName:@"text-value"];
                 
-                if(!placeholderText)
+                if (!placeholderText)
                 {
-                    if(weakSelf.placeholder)
+                    if (weakSelf.placeholder)
                     {
                         placeholderText = weakSelf.placeholder;
                     }
@@ -187,197 +187,212 @@ static NSDictionary *PSEUDOCLASS_MAP;
                 }
                 
                 [weakSelf px_setAttributedPlaceholder:[[NSAttributedString alloc] initWithString:placeholderText
-                                                                                      attributes:currentPlaceholderTextAttributes]];
+                                                                                     attributes:currentPlaceholderTextAttributes]];
             }
         }];
         
         placeholder.viewStylers = @[
-             [[PXTextShadowStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXTextShadowStyler *styler, PXStylerContext *context) {
-                 PXShadow *shadow = context.textShadow;
+            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                    PXShadow *shadow = context.textShadow;
+                             
+                    // Get attributes from context, if any
+                    NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
+                    if (!currentTextAttributes)
+                    {
+                        currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
+                        [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
+                    }
+                             
+                    NSShadow *nsShadow = [[NSShadow alloc] init];
+                    nsShadow.shadowColor = shadow.color;
+                    nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
+                    nsShadow.shadowBlurRadius = shadow.blurDistance;
+                    currentTextAttributes[NSShadowAttributeName] = nsShadow;
+                }
+            }],
                  
-                 // Get attributes from context, if any
-                 NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
-                 if(!currentTextAttributes)
-                 {
-                     currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
-                     [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
-                 }
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                     
+                    // Get attributes from context, if any
+                    NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
+                    if (!currentTextAttributes)
+                    {
+                        currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
+                        [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
+                    }
+                     
+                    currentTextAttributes[NSFontAttributeName] = context.font;
+                }
+            }],
                  
-                 NSShadow *nsShadow = [[NSShadow alloc] init];
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                     
+                    // Get attributes from context, if any
+                    NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
+                    if (!currentTextAttributes)
+                    {
+                        currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
+                        [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
+                    }
+                     
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+                     
+                    if (color)
+                    {
+                        currentTextAttributes[NSForegroundColorAttributeName] = color;
+                    }
+                }
+            }],
                  
-                 nsShadow.shadowColor = shadow.color;
-                 nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
-                 nsShadow.shadowBlurRadius = shadow.blurDistance;
-                 
-                 currentTextAttributes[NSShadowAttributeName] = nsShadow;
-             }],
-             
-             [[PXFontStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXFontStyler *styler, PXStylerContext *context) {
-                 
-                 // Get attributes from context, if any
-                 NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
-                 if(!currentTextAttributes)
-                 {
-                     currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
-                     [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
-                 }
-                 
-                 currentTextAttributes[NSFontAttributeName] = context.font;
-                 
-             }],
-             
-             [[PXPaintStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXPaintStyler *styler, PXStylerContext *context) {
-                 
-                 // Get attributes from context, if any
-                 NSMutableDictionary *currentTextAttributes = [context propertyValueForName:@"text-attributes"];
-                 if(!currentTextAttributes)
-                 {
-                     currentTextAttributes = [[NSMutableDictionary alloc] initWithCapacity:5];
-                     [context setPropertyValue:currentTextAttributes forName:@"text-attributes"];
-                 }
-                 
-                 UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-                 
-                 if(color)
-                 {
-                     currentTextAttributes[NSForegroundColorAttributeName] = color;
-                 }
-             }],
-             
-             [[PXTextContentStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXTextContentStyler *styler, PXStylerContext *context) {
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                    [context setPropertyValue:context.text forName:@"text-value"];
+                }
+            }],
+        ];
 
-                 [context setPropertyValue:context.text forName:@"text-value"];
-             }],
-             
-         ];
-        
-        //
         // attributed text child
-        //
         PXVirtualStyleableControl *attributedText =
         [[PXVirtualStyleableControl alloc] initWithParent:self
                                               elementName:@"attributed-text"
-                                    viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
-                                        // nothing for now
-                                    }];
+                                        viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
+                                            // nothing for now
+                                        }];
         
-        attributedText.viewStylers =
-        @[
-          [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(PXVirtualStyleableControl *styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
-              
-              NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf
-                                                            withDefaultText:weakSelf.text
-                                                                   andColor:weakSelf.textColor];              
-              
-              NSMutableAttributedString *attrString = nil;
-              if(context.transformedText)
-              {
-                  attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
-              }
-              
-              [weakSelf px_setAttributedText:attrString];
-          }]
-          ];
-        
+        attributedText.viewStylers = @[
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXVirtualStyleableControl class]]) {
+                    PXUITextField *view = weakSelf;
+                    NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf
+                                                                withDefaultText:weakSelf.text
+                                                                      andColor:weakSelf.textColor];
+                     
+                    NSMutableAttributedString *attrString = nil;
+                    if (context.transformedText)
+                    {
+                        attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
+                    }
+                     
+                    [weakSelf px_setAttributedText:attrString];
+                }
+            }]
+        ];
+
         NSArray *styleChildren = @[ placeholder, attributedText ];
         
         objc_setAssociatedObject(self, &STYLE_CHILDREN, styleChildren, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    
+
     return [objc_getAssociatedObject(self, &STYLE_CHILDREN) arrayByAddingObjectsFromArray:self.subviews];
 }
-
 
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXFontStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXFontStyler *styler, PXStylerContext *context) {
-                UIFont *font = context.font;
-
-                if (font)
-                {
-                    [view px_setFont: font];
-                }
-
-            }],
-
-            [[PXColorStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXColorStyler *styler, PXStylerContext *context) {
-                UIColor *color = (UIColor *) [context propertyValueForName:@"color"];
-                
-                if(color)
-                {
-                    [view px_setTextColor: color];
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                    UIFont *font = context.font;
+                    if (font) {
+                        [view px_setFont:font];
+                    }
                 }
             }],
 
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(PXUITextField *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                [view px_setText: context.text];
+            [[PXColorStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXColorStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+                    if (color) {
+                        [view px_setTextColor:color];
+                    }
+                }
+            }],
+
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextField class]]) {
+                    PXUITextField *view = (PXUITextField *)styleable;
+                    [view px_setText:context.text];
+                }
             }],
 
             [[PXGenericStyler alloc] initWithHandlers: @{
-             @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-
-                [view px_setTextAlignment: declaration.textAlignmentValue];
-             },
-             @"-ios-border-style" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-
-                [view px_setBorderStyle:declaration.textBorderStyleValue];
-            },
-             @"padding" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-
-                view.padding = declaration.offsetsValue;
-            },
-             @"padding-top" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-                PXOffsets *padding = view.padding;
-                CGFloat value = declaration.floatValue;
-
-                view.padding = [[PXOffsets alloc] initWithTop:value right:padding.right bottom:padding.bottom left:padding.left];
-            },
-             @"padding-right" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-                PXOffsets *padding = view.padding;
-                CGFloat value = declaration.floatValue;
-
-                view.padding = [[PXOffsets alloc] initWithTop:padding.top right:value bottom:padding.bottom left:padding.left];
-            },
-             @"padding-bottom" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-                PXOffsets *padding = view.padding;
-                CGFloat value = declaration.floatValue;
-
-                view.padding = [[PXOffsets alloc] initWithTop:padding.top right:padding.right bottom:value left:padding.left];
-            },
-             @"padding-left" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextField *view = (PXUITextField *)context.styleable;
-                PXOffsets *padding = view.padding;
-                CGFloat value = declaration.floatValue;
-
-                view.padding = [[PXOffsets alloc] initWithTop:padding.top right:padding.right bottom:padding.bottom left:value];
-            },
+                @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        [view px_setTextAlignment:declaration.textAlignmentValue];
+                    }
+                },
+                @"-ios-border-style" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        [view px_setBorderStyle:declaration.textBorderStyleValue];
+                    }
+                },
+                @"padding" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        view.padding = declaration.offsetsValue;
+                    }
+                },
+                @"padding-top" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        PXOffsets *padding = view.padding;
+                        CGFloat value = declaration.floatValue;
+                        view.padding = [[PXOffsets alloc] initWithTop:value right:padding.right bottom:padding.bottom left:padding.left];
+                    }
+                },
+                @"padding-right" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        PXOffsets *padding = view.padding;
+                        CGFloat value = declaration.floatValue;
+                        view.padding = [[PXOffsets alloc] initWithTop:padding.top right:value bottom:padding.bottom left:padding.left];
+                    }
+                },
+                @"padding-bottom" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        PXOffsets *padding = view.padding;
+                        CGFloat value = declaration.floatValue;
+                        view.padding = [[PXOffsets alloc] initWithTop:padding.top right:padding.right bottom:value left:padding.left];
+                    }
+                },
+                @"padding-left" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextField class]]) {
+                        PXUITextField *view = (PXUITextField *)context.styleable;
+                        PXOffsets *padding = view.padding;
+                        CGFloat value = declaration.floatValue;
+                        view.padding = [[PXOffsets alloc] initWithTop:padding.top right:padding.right bottom:padding.bottom left:value];
+                    }
+                },
             }],
 
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

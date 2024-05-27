@@ -125,14 +125,17 @@ static NSDictionary *BUTTONS_PSEUDOCLASS_MAP;
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXLayoutStyler.sharedInstance,
 
-            [[PXOpacityStyler alloc] initWithCompletionBlock:^(PXUIToolbar *view, PXOpacityStyler *styler, PXStylerContext *context) {
-                [view px_setTranslucent: (context.opacity < 1.0) ? YES : NO];
+            [[PXOpacityStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXOpacityStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUIToolbar class]]) {
+                    PXUIToolbar *view = (PXUIToolbar *)styleable;
+                    [view px_setTranslucent:(context.opacity < 1.0)];
+                }
             }],
 
             PXShapeStyler.sharedInstance,
@@ -141,43 +144,44 @@ static NSDictionary *BUTTONS_PSEUDOCLASS_MAP;
             PXBoxShadowStyler.sharedInstance,
 
             // shadow-* image properties
-            [[PXBarShadowStyler alloc] initWithCompletionBlock:^(PXUIToolbar *view, PXBarShadowStyler *styler, PXStylerContext *context) {
-                // iOS 6.x property
-                if ([PXUtils isIOS6OrGreater])
-                {
-                    if (context.shadowImage)
-                    {
-                        [view px_setShadowImage:context.shadowImage forToolbarPosition:UIToolbarPositionAny];
-                    }
-                    else
-                    {
-                        // 'fill' with a clear pixel
-                        [view px_setShadowImage:PXImageUtils.clearPixel forToolbarPosition:UIToolbarPositionAny];
+            [[PXBarShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXBarShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUIToolbar class]]) {
+                    PXUIToolbar *view = (PXUIToolbar *)styleable;
+
+                    // iOS 6.x property
+                    if ([PXUtils isIOS6OrGreater]) {
+                        if (context.shadowImage) {
+                            [view px_setShadowImage:context.shadowImage forToolbarPosition:UIToolbarPositionAny];
+                        } else {
+                            // 'fill' with a clear pixel
+                            [view px_setShadowImage:PXImageUtils.clearPixel forToolbarPosition:UIToolbarPositionAny];
+                        }
                     }
                 }
-                
             }],
 
             PXAnimationStyler.sharedInstance,
-            
+
             [[PXGenericStyler alloc] initWithHandlers: @{
-              @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUIToolbar *view = (PXUIToolbar *)context.styleable;
-                UIColor *color = declaration.colorValue;
-                [view px_setTintColor:color];
-            },
-                                                         
-                 @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                    PXUIToolbar *view = (PXUIToolbar *)context.styleable;
-                    UIColor *color = declaration.colorValue;
-                    [view px_setTintColor:color];
+                @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUIToolbar class]]) {
+                        PXUIToolbar *view = (PXUIToolbar *)context.styleable;
+                        UIColor *color = declaration.colorValue;
+                        [view px_setTintColor:color];
+                    }
                 },
-        }],
-            
+                @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUIToolbar class]]) {
+                        PXUIToolbar *view = (PXUIToolbar *)context.styleable;
+                        UIColor *color = declaration.colorValue;
+                        [view px_setTintColor:color];
+                    }
+                },
+            }],
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

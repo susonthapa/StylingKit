@@ -53,73 +53,83 @@
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
 
-            [[PXOpacityStyler alloc] initWithCompletionBlock:^(PXUISearchBar *view, PXOpacityStyler *styler, PXStylerContext *context) {
-                [view px_setTranslucent:(context.opacity < 1.0) ? YES : NO];
+            [[PXOpacityStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXOpacityStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISearchBar class]]) {
+                    PXUISearchBar *view = (PXUISearchBar *)styleable;
+                    [view px_setTranslucent:(context.opacity < 1.0) ? YES : NO];
+                }
             }],
 
             PXFillStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(PXUISearchBar *view, PXTextShadowStyler *styler, PXStylerContext *context) {
-                PXShadow *shadow = context.textShadow;
-                NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view scopeBarButtonTitleTextAttributesForState:UIControlStateNormal]];
+            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISearchBar class]]) {
+                    PXUISearchBar *view = (PXUISearchBar *)styleable;
+                    PXShadow *shadow = context.textShadow;
+                    NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view scopeBarButtonTitleTextAttributesForState:UIControlStateNormal]];
 
-                NSShadow *nsShadow = [[NSShadow alloc] init];
-                
-                nsShadow.shadowColor = shadow.color;
-                nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
-                nsShadow.shadowBlurRadius = shadow.blurDistance;
-                
-                currentTextAttributes[NSShadowAttributeName] = nsShadow;
+                    NSShadow *nsShadow = [[NSShadow alloc] init];
+                    nsShadow.shadowColor = shadow.color;
+                    nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
+                    nsShadow.shadowBlurRadius = shadow.blurDistance;
 
-                [view px_setScopeBarButtonTitleTextAttributes:currentTextAttributes forState:UIControlStateNormal];
+                    currentTextAttributes[NSShadowAttributeName] = nsShadow;
+
+                    [view px_setScopeBarButtonTitleTextAttributes:currentTextAttributes forState:UIControlStateNormal];
+                }
             }],
 
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(PXUISearchBar *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                [view px_setText: context.text];
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISearchBar class]]) {
+                    PXUISearchBar *view = (PXUISearchBar *)styleable;
+                    [view px_setText:context.text];
+                }
             }],
 
             [[PXGenericStyler alloc] initWithHandlers: @{
+                @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUISearchBar class]]) {
+                        PXUISearchBar *view = (PXUISearchBar *)context.styleable;
+                        UIColor *color = declaration.colorValue;
+                        [view px_setTintColor:color];
+                    }
+                },
 
-            @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUISearchBar *view = (PXUISearchBar *)context.styleable;
-                UIColor *color = declaration.colorValue;
-                [view px_setTintColor:color];
-            },
+                @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUISearchBar class]]) {
+                        PXUISearchBar *view = (PXUISearchBar *)context.styleable;
+                        UIColor *color = declaration.colorValue;
+                        [view px_setTintColor:color];
+                    }
+                },
 
-             @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUISearchBar *view = (PXUISearchBar *)context.styleable;
-                UIColor *color = declaration.colorValue;
-                [view px_setTintColor:color];
-             },
-                
-             @"bar-style" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUISearchBar *view = (PXUISearchBar *)context.styleable;
-                NSString *style = (declaration.stringValue).lowercaseString;
+                @"bar-style" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUISearchBar class]]) {
+                        PXUISearchBar *view = (PXUISearchBar *)context.styleable;
+                        NSString *style = (declaration.stringValue).lowercaseString;
 
-                if ([style isEqualToString:@"black"])
-                {
-                    [view px_setBarStyle: UIBarStyleBlack];
-                }
-                else //if([style isEqualToString:@"default"])
-                {
-                    [view px_setBarStyle: UIBarStyleDefault];
-                }
-            },
+                        if ([style isEqualToString:@"black"]) {
+                            [view px_setBarStyle:UIBarStyleBlack];
+                        } else { // Default to UIBarStyleDefault
+                            [view px_setBarStyle:UIBarStyleDefault];
+                        }
+                    }
+                },
             }],
 
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

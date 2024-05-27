@@ -96,59 +96,65 @@
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
             // shadow-* image properties
-            [[PXBarShadowStyler alloc] initWithCompletionBlock:^(PXUITabBar *view, PXBarShadowStyler *styler, PXStylerContext *context) {
-                // iOS 6.x property
-                if ([PXUtils isIOS6OrGreater])
-                {
-                    if (context.shadowImage)
+            [[PXBarShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXBarShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITabBar class]]) {
+                    PXUITabBar *view = (PXUITabBar *)styleable;
+
+                    // iOS 6.x property
+                    if ([PXUtils isIOS6OrGreater])
                     {
-                        [view px_setShadowImage:context.shadowImage];
-                    }
-                    else
-                    {
-                        // 'fill' with a clear pixel
-                        [view px_setShadowImage:PXImageUtils.clearPixel];
+                        if (context.shadowImage)
+                        {
+                            [view px_setShadowImage:context.shadowImage];
+                        }
+                        else
+                        {
+                            // 'fill' with a clear pixel
+                            [view px_setShadowImage:PXImageUtils.clearPixel];
+                        }
                     }
                 }
             }],
 
             [[PXGenericStyler alloc] initWithHandlers: @{
-             @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITabBar *view = (PXUITabBar *)context.styleable;
-                
-                [view px_setTintColor: declaration.colorValue];
-            },
-             @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITabBar *view = (PXUITabBar *)context.styleable;
-
-                [view px_setTintColor: declaration.colorValue];
-            },
-             @"selected-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITabBar *view = (PXUITabBar *)context.styleable;
-
-                [view px_setSelectedImageTintColor: declaration.colorValue];
-            }
+                @"-ios-tint-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITabBar class]]) {
+                        PXUITabBar *view = (PXUITabBar *)context.styleable;
+                        [view px_setTintColor:declaration.colorValue];
+                    }
+                },
+                @"color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITabBar class]]) {
+                        PXUITabBar *view = (PXUITabBar *)context.styleable;
+                        [view px_setTintColor:declaration.colorValue];
+                    }
+                },
+                @"selected-color" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITabBar class]]) {
+                        PXUITabBar *view = (PXUITabBar *)context.styleable;
+                        [view px_setSelectedImageTintColor:declaration.colorValue];
+                    }
+                }
             }],
 
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

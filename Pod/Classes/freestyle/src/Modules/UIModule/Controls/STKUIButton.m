@@ -110,44 +110,41 @@ static const char STYLE_CHILDREN;
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
-            ];
-        
+        ];
+
         //
         // attributed text child
         //
         PXVirtualStyleableControl *attributedText =
         [[PXVirtualStyleableControl alloc] initWithParent:self
                                               elementName:@"attributed-text"
-                                    viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
-                                        // nothing for now
-                                    }];
-        
+                                        viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
+                                            // nothing for now
+                                        }];
+
         attributedText.defaultPseudoClass = @"normal";
         attributedText.supportedPseudoClasses = PSEUDOCLASS_MAP.allKeys;
-        
+
         attributedText.viewStylers =
         @[
-            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(PXVirtualStyleableControl *styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
 
-                UIControlState state = ([context stateFromStateNameMap:PSEUDOCLASS_MAP]);
-                
-                NSAttributedString *stateTextAttr = [weakSelf attributedTitleForState:state];
-                NSString *stateText = stateTextAttr ? stateTextAttr.string : [weakSelf titleForState:state];
-                
-                UIColor *stateColor = [weakSelf titleColorForState:state];
-                
-                NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf
-                                                              withDefaultText:stateText
-                                                                     andColor:stateColor];
-               
-                
-               NSMutableAttributedString *attrString = nil;               
-               if(context.transformedText)
-               {
-                   attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
-               }
-               
-               [weakSelf px_setAttributedTitle:attrString forState:state];
+                if ([styleable isKindOfClass:[PXVirtualStyleableControl class]]) {
+                    UIControlState state = [context stateFromStateNameMap:PSEUDOCLASS_MAP];
+
+                    NSAttributedString *stateTextAttr = [weakSelf attributedTitleForState:state];
+                    NSString *stateText = stateTextAttr ? stateTextAttr.string : [weakSelf titleForState:state];
+                    UIColor *stateColor = [weakSelf titleColorForState:state];
+
+                    NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf withDefaultText:stateText andColor:stateColor];
+
+                    NSMutableAttributedString *attrString = nil;
+                    if (context.transformedText) {
+                        attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
+                    }
+
+                    [weakSelf px_setAttributedTitle:attrString forState:state];
+                }
             }]
         ];
 
@@ -176,7 +173,7 @@ static const char STYLE_CHILDREN;
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
@@ -189,83 +186,98 @@ static const char STYLE_CHILDREN;
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(STKUIButton *view, PXTextShadowStyler *styler, PXStylerContext *context) {
-                PXShadow *shadow = context.textShadow;
+            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    PXShadow *shadow = context.textShadow;
 
-                if (shadow)
-                {
-                    [view px_setTitleShadowColor: shadow.color forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-                    view.px_titleLabel.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
+                    if (shadow)
+                    {
+                        [view px_setTitleShadowColor:shadow.color forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                        view.px_titleLabel.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
 
-                    /*
-                    NSMutableDictionary *attrs = [[NSMutableDictionary alloc] init];
-
-                    [attrs setObject:shadow.color forKey:UITextAttributeTextShadowColor];
-                    [attrs setObject:[NSValue valueWithCGSize:CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset)] forKey:UITextAttributeTextShadowOffset];
-
-                    NSAttributedString *oldString = [view attributedTitleForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-                    NSMutableAttributedString *attrString = (oldString)
-                        ?   [[NSMutableAttributedString alloc] initWithAttributedString:oldString]
-                        :   [[NSMutableAttributedString alloc] initWithString:[view titleForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
-
-                    [attrString setAttributes:attrs range:NSMakeRange(0, attrString.length)];
-
-                    [view px_setAttributedTitle:attrString forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-                    */
+                        /*
+                        NSMutableDictionary *attrs = [[NSMutableDictionary alloc] init];
+                        [attrs setObject:shadow.color forKey:UITextAttributeTextShadowColor];
+                        [attrs setObject:[NSValue valueWithCGSize:CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset)] forKey:UITextAttributeTextShadowOffset];
+                        NSAttributedString *oldString = [view attributedTitleForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                        NSMutableAttributedString *attrString = (oldString)
+                            ? [[NSMutableAttributedString alloc] initWithAttributedString:oldString]
+                            : [[NSMutableAttributedString alloc] initWithString:[view titleForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
+                        [attrString setAttributes:attrs range:NSMakeRange(0, attrString.length)];
+                        [view px_setAttributedTitle:attrString forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                        */
+                    }
                 }
             }],
 
-            [[PXFontStyler alloc] initWithCompletionBlock:^(STKUIButton *view, PXFontStyler *styler, PXStylerContext *context) {
-                view.px_titleLabel.font = context.font;
-            }],
-
-            [[PXPaintStyler alloc] initWithCompletionBlock:^(STKUIButton *view, PXPaintStyler *styler, PXStylerContext *context) {
-                UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-                if(color)
-                {
-                    [view px_setTitleColor:color forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-                }
-                
-                color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
-                if(color)
-                {
-                    [view px_setTintColor:color];
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    view.px_titleLabel.font = context.font;
                 }
             }],
 
-            [[PXInsetStyler alloc] initWithBaseName:@"content-edge" completionBlock:^(STKUIButton *view, PXInsetStyler *styler, PXStylerContext *context) {
-                [view px_setContentEdgeInsets:styler.insets];
-            }],
-            [[PXInsetStyler alloc] initWithBaseName:@"title-edge" completionBlock:^(STKUIButton *view, PXInsetStyler *styler, PXStylerContext *context) {
-                [view px_setTitleEdgeInsets:styler.insets];
-            }],
-            [[PXInsetStyler alloc] initWithBaseName:@"image-edge" completionBlock:^(STKUIButton *view, PXInsetStyler *styler, PXStylerContext *context) {
-                [view px_setImageEdgeInsets:styler.insets];
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+                    if (color)
+                    {
+                        [view px_setTitleColor:color forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                    }
+
+                    color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
+                    if (color)
+                    {
+                        [view px_setTintColor:color];
+                    }
+                }
             }],
 
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(STKUIButton *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                [view px_setTitle:context.text forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+            [[PXInsetStyler alloc] initWithBaseName:@"content-edge" completionBlock:^(id<PXStyleable> styleable, PXInsetStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    [view px_setContentEdgeInsets:styler.insets];
+                }
+            }],
+            [[PXInsetStyler alloc] initWithBaseName:@"title-edge" completionBlock:^(id<PXStyleable> styleable, PXInsetStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    [view px_setTitleEdgeInsets:styler.insets];
+                }
+            }],
+            [[PXInsetStyler alloc] initWithBaseName:@"image-edge" completionBlock:^(id<PXStyleable> styleable, PXInsetStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    [view px_setImageEdgeInsets:styler.insets];
+                }
+            }],
+
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[STKUIButton class]]) {
+                    STKUIButton *view = (STKUIButton *)styleable;
+                    [view px_setTitle:context.text forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                }
             }],
 
             [[PXGenericStyler alloc] initWithHandlers: @{
-             @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                STKUIButton *view = (STKUIButton *)context.styleable;
-                NSString *newTitle = [declaration transformString:[view titleForState:UIControlStateNormal]];
-
-                [view px_setTitle:newTitle forState:UIControlStateNormal];
-            },
-             @"text-overflow" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                STKUIButton *view = (STKUIButton *)context.styleable;
-
-                view.px_titleLabel.lineBreakMode = declaration.lineBreakModeValue;
-            }
+                @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    STKUIButton *view = (STKUIButton *)context.styleable;
+                    NSString *newTitle = [declaration transformString:[view titleForState:UIControlStateNormal]];
+                    [view px_setTitle:newTitle forState:UIControlStateNormal];
+                },
+                @"text-overflow" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    STKUIButton *view = (STKUIButton *)context.styleable;
+                    view.px_titleLabel.lineBreakMode = declaration.lineBreakModeValue;
+                }
             }],
 
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty
