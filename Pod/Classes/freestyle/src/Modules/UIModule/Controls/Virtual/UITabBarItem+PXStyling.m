@@ -88,35 +88,39 @@ static NSDictionary *PSEUDOCLASS_MAP;
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(UIBarButtonItem *view, PXAttributedTextStyler *styler, PXStylerContext *context) {
-                
-                UIControlState state = ([context stateFromStateNameMap:PSEUDOCLASS_MAP]) ? [context stateFromStateNameMap:PSEUDOCLASS_MAP] : UIControlStateNormal;
-                
-                NSDictionary *attribs = [view titleTextAttributesForState:state];
-                
-                NSDictionary *mergedAttribs = [context mergeTextAttributes:attribs];
-                
-                [view setTitleTextAttributes:mergedAttribs
-                                    forState:state];
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> view, PXAttributedTextStyler *styler, PXStylerContext *context) {
+                if ([view isKindOfClass:[UIBarButtonItem class]]) {
+                    UIBarButtonItem *barButtonItem = (UIBarButtonItem *)view;
+                    
+                    UIControlState state = ([context stateFromStateNameMap:PSEUDOCLASS_MAP]) ? [context stateFromStateNameMap:PSEUDOCLASS_MAP] : UIControlStateNormal;
+
+                    NSDictionary *attribs = [barButtonItem titleTextAttributesForState:state];
+
+                    NSDictionary *mergedAttribs = [context mergeTextAttributes:attribs];
+
+                    [barButtonItem setTitleTextAttributes:mergedAttribs forState:state];
+                }
             }],
-            
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(UIBarButtonItem *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                view.title = context.text;
+
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> view, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([view isKindOfClass:[UIBarButtonItem class]]) {
+                    UIBarButtonItem *barButtonItem = (UIBarButtonItem *)view;
+                    barButtonItem.title = context.text;
+                }
             }],
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (void)updateStyleWithRuleSet:(PXRuleSet *)ruleSet context:(PXStylerContext *)context

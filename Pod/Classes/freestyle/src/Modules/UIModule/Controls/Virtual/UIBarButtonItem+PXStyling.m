@@ -183,11 +183,10 @@ void PXForceLoadUIBarButtonItemPXStyling() {}
     return styleChildren;
 }
 
-
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
@@ -197,22 +196,28 @@ void PXForceLoadUIBarButtonItemPXStyling() {}
             PXShapeStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(UIBarButtonItem *view, PXAttributedTextStyler *styler, PXStylerContext *context) {
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> view, PXAttributedTextStyler *styler, PXStylerContext *context) {
                 
-                UIControlState state = ([context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]) ? [context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP] : UIControlStateNormal;
-                
-                NSDictionary *attribs = [view titleTextAttributesForState:state];
-                
-                NSDictionary *mergedAttribs = [context mergeTextAttributes:attribs];
-                
-                [view setTitleTextAttributes:mergedAttribs
-                                    forState:state];
+                if ([view isKindOfClass:[UIBarButtonItem class]]) {
+                    UIBarButtonItem *barButtonItem = (UIBarButtonItem *)view;
+
+                    UIControlState state = ([context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]) ? [context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP] : UIControlStateNormal;
+
+                    NSDictionary *attribs = [barButtonItem titleTextAttributesForState:state];
+
+                    NSDictionary *mergedAttribs = [context mergeTextAttributes:attribs];
+
+                    [barButtonItem setTitleTextAttributes:mergedAttribs forState:state];
+                }
             }],
-            
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(UIBarButtonItem *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                view.title = context.text;
+
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> view, PXTextContentStyler *styler, PXStylerContext *context) {
+                
+                if ([view isKindOfClass:[UIBarButtonItem class]]) {
+                    UIBarButtonItem *barButtonItem = (UIBarButtonItem *)view;
+                    barButtonItem.title = context.text;
+                }
             }],
-            
 
             [[PXGenericStyler alloc] initWithHandlers: @{
                 @"-ios-tint-color" : [UIBarButtonItem TintColorDeclarationHandlerBlock:nil]
@@ -220,7 +225,7 @@ void PXForceLoadUIBarButtonItemPXStyling() {}
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (void)updateStyleWithRuleSet:(PXRuleSet *)ruleSet context:(PXStylerContext *)context
@@ -260,38 +265,40 @@ void PXForceLoadUIBarButtonItemPXStyling() {}
     };
 }
     
-+ (PXStylerCompletionBlock) FontStylerCompletionBlock:(UIBarButtonItem *)target
++ (PXStylerCompletionBlock)FontStylerCompletionBlock:(UIBarButtonItem *)target
 {
-    return ^(UIBarButtonItem *styleable, PXOpacityStyler *styler, PXStylerContext *context)
+    return ^(id<PXStyleable> styleable, id<PXStyler> styler, PXStylerContext *context)
     {
-        NSDictionary *attributes = [context propertyValueForName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
-        NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:attributes];
-        currentTextAttributes[NSFontAttributeName] = context.font;
-        [context setPropertyValue:currentTextAttributes forName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
-        
-        [(target == nil ? styleable : target) setTitleTextAttributes:currentTextAttributes
-                                 forState:[context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]];
-    };
-}
-    
-+ (PXStylerCompletionBlock) PXPaintStylerCompletionBlock:(UIBarButtonItem *)target
-{
-    return ^(UIBarButtonItem *styleable, PXOpacityStyler *styler, PXStylerContext *context)
-    {
-        
-        NSDictionary *attributes = [context propertyValueForName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
-        NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:attributes];
-        UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-        if(color)
-        {
-            currentTextAttributes[NSForegroundColorAttributeName] = color;
+        if ([styleable isKindOfClass:[UIBarButtonItem class]]) {
+            UIBarButtonItem *barButtonItem = (UIBarButtonItem *)styleable;
+            NSDictionary *attributes = [context propertyValueForName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
+            NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:attributes];
+            currentTextAttributes[NSFontAttributeName] = context.font;
             [context setPropertyValue:currentTextAttributes forName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
-            [(target == nil ? styleable : target) setTitleTextAttributes:currentTextAttributes
-                                     forState:[context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]];
+            
+            [(target == nil ? barButtonItem : target) setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]];
         }
     };
 }
 
-
++ (PXStylerCompletionBlock)PXPaintStylerCompletionBlock:(UIBarButtonItem *)target
+{
+    return ^(id<PXStyleable> styleable, id<PXStyler> styler, PXStylerContext *context)
+    {
+        if ([styleable isKindOfClass:[UIBarButtonItem class]]) {
+            UIBarButtonItem *barButtonItem = (UIBarButtonItem *)styleable;
+            NSDictionary *attributes = [context propertyValueForName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
+            NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:attributes];
+            UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+            
+            if (color) {
+                currentTextAttributes[NSForegroundColorAttributeName] = color;
+                [context setPropertyValue:currentTextAttributes forName:[NSString stringWithFormat:@"textAttributes-%@", context.activeStateName]];
+                
+                [(target == nil ? barButtonItem : target) setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:BUTTONS_PSEUDOCLASS_MAP]];
+            }
+        }
+    };
+}
 
 @end

@@ -112,64 +112,64 @@ static char const STYLE_CHILDREN;
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(PXUISegmentedControl *view, PXTextShadowStyler *styler, PXStylerContext *context) {
-                PXShadow *shadow = context.textShadow;
-                NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
+            [[PXTextShadowStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextShadowStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISegmentedControl class]]) {
+                    PXUISegmentedControl *view = (PXUISegmentedControl *)styleable;
+                    PXShadow *shadow = context.textShadow;
+                    
+                    NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
 
-                NSShadow *nsShadow = [[NSShadow alloc] init];
-                
-                nsShadow.shadowColor = shadow.color;
-                nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
-                nsShadow.shadowBlurRadius = shadow.blurDistance;
-                
-                currentTextAttributes[NSShadowAttributeName] = nsShadow;
+                    NSShadow *nsShadow = [[NSShadow alloc] init];
+                    nsShadow.shadowColor = shadow.color;
+                    nsShadow.shadowOffset = CGSizeMake(shadow.horizontalOffset, shadow.verticalOffset);
+                    nsShadow.shadowBlurRadius = shadow.blurDistance;
 
-                [view px_setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-            }],
+                    currentTextAttributes[NSShadowAttributeName] = nsShadow;
 
-            [[PXFontStyler alloc] initWithCompletionBlock:^(PXUISegmentedControl *view, PXFontStyler *styler, PXStylerContext *context) {
-
-                NSMutableDictionary *currentTextAttributes = [NSMutableDictionary
-                                                              dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
-
-                currentTextAttributes[NSFontAttributeName] = context.font;
-
-                [view px_setTitleTextAttributes:currentTextAttributes
-                                       forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
-            }],
-
-            [[PXPaintStyler alloc] initWithCompletionBlock:^(PXUISegmentedControl *view, PXPaintStyler *styler, PXStylerContext *context) {
-
-                NSMutableDictionary *currentTextAttributes = [NSMutableDictionary
-                                                              dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
-                UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-
-                if(color)
-                {
-                    currentTextAttributes[NSForegroundColorAttributeName] = color;
-
-                    [view px_setTitleTextAttributes:currentTextAttributes
-                                           forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                    [view px_setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
                 }
-                
-                // Check for tint-color
-                color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
-                if(color)
-                {
-                    [view px_setTintColor:color];
+            }],
+
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISegmentedControl class]]) {
+                    PXUISegmentedControl *view = (PXUISegmentedControl *)styleable;
+                    
+                    NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
+                    currentTextAttributes[NSFontAttributeName] = context.font;
+
+                    [view px_setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                }
+            }],
+
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUISegmentedControl class]]) {
+                    PXUISegmentedControl *view = (PXUISegmentedControl *)styleable;
+                    
+                    NSMutableDictionary *currentTextAttributes = [NSMutableDictionary dictionaryWithDictionary:[view titleTextAttributesForState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]]];
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+
+                    if (color) {
+                        currentTextAttributes[NSForegroundColorAttributeName] = color;
+                        [view px_setTitleTextAttributes:currentTextAttributes forState:[context stateFromStateNameMap:PSEUDOCLASS_MAP]];
+                    }
+                    
+                    // Check for tint-color
+                    color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
+                    if (color) {
+                        [view px_setTintColor:color];
+                    }
                 }
             }],
 
@@ -177,7 +177,7 @@ static char const STYLE_CHILDREN;
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

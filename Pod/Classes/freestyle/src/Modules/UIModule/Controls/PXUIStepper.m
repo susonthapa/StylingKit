@@ -144,7 +144,7 @@ static char const STYLE_CHILDREN;
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
@@ -152,20 +152,23 @@ static char const STYLE_CHILDREN;
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
 
-            [[PXPaintStyler alloc] initWithCompletionBlock:^(PXUIStepper *view, PXPaintStyler *styler, PXStylerContext *context) {
-                
-                if ([PXUtils isIOS6OrGreater])
-                {
-                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUIStepper class]]) {
+                    PXUIStepper *view = (PXUIStepper *)styleable;
                     
-                    if(color == nil)
+                    if ([PXUtils isIOS6OrGreater])
                     {
-                        color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
-                    }
-                    
-                    if(color)
-                    {
-                        [view px_setTintColor:color];
+                        UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+                        
+                        if (color == nil)
+                        {
+                            color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
+                        }
+                        
+                        if (color)
+                        {
+                            [view px_setTintColor:color];
+                        }
                     }
                 }
             }],
@@ -174,12 +177,11 @@ static char const STYLE_CHILDREN;
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
-
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

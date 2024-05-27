@@ -61,98 +61,109 @@ static const char STYLE_CHILDREN;
     if (!objc_getAssociatedObject(self, &STYLE_CHILDREN))
     {
         __weak PXUITextView *weakSelf = self;
-        
+
         // attributed text
         PXVirtualStyleableControl *attributedText =
         [[PXVirtualStyleableControl alloc] initWithParent:self
                                               elementName:@"attributed-text"
-                                    viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
-                                        // nothing for now
-                                    }];
-        
+                                        viewStyleUpdaterBlock:^(PXRuleSet *ruleSet, PXStylerContext *context) {
+                                            // nothing for now
+                                        }];
+
         attributedText.viewStylers = @[
-                                       
-                                       [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(PXVirtualStyleableControl *styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
-                                           
-                                           NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf withDefaultText:weakSelf.text andColor:weakSelf.textColor];
-                                           
-                                           NSMutableAttributedString *attrString = nil;                                           
-                                           if(context.transformedText)
-                                           {
-                                               attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
-                                           }
-                                           
-                                           [weakSelf px_setAttributedText:attrString];
-                                       }]
-                                       ];
-        
+            [[PXAttributedTextStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXAttributedTextStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXVirtualStyleableControl class]]) {
+                    NSMutableDictionary *dict = [context attributedTextAttributes:weakSelf withDefaultText:weakSelf.text andColor:weakSelf.textColor];
+
+                    NSMutableAttributedString *attrString = nil;
+                    if (context.transformedText) {
+                        attrString = [[NSMutableAttributedString alloc] initWithString:context.transformedText attributes:dict];
+                    }
+
+                    [weakSelf px_setAttributedText:attrString];
+                }
+            }]
+        ];
+
         NSArray *styleChildren = @[ attributedText ];
-        
+
         objc_setAssociatedObject(self, &STYLE_CHILDREN, styleChildren, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    
+
     return objc_getAssociatedObject(self, &STYLE_CHILDREN);
 }
 
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXLayoutStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
-
             PXShapeStyler.sharedInstance,
             PXFillStyler.sharedInstance,
             PXBorderStyler.sharedInstance,
             PXBoxShadowStyler.sharedInstance,
 
-            [[PXFontStyler alloc] initWithCompletionBlock:^(PXUITextView *view, PXFontStyler *styler, PXStylerContext *context) {
-                [view px_setFont: context.font];
+            [[PXFontStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXFontStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextView class]]) {
+                    PXUITextView *view = (PXUITextView *)styleable;
+                    [view px_setFont:context.font];
+                }
             }],
 
-            [[PXColorStyler alloc] initWithCompletionBlock:^(PXUITextView *view, PXColorStyler *styler, PXStylerContext *context) {
-                [view px_setTextColor: (UIColor *) [context propertyValueForName:@"color"]];
+            [[PXColorStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXColorStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextView class]]) {
+                    PXUITextView *view = (PXUITextView *)styleable;
+                    [view px_setTextColor:(UIColor *)[context propertyValueForName:@"color"]];
+                }
             }],
 
-            [[PXTextContentStyler alloc] initWithCompletionBlock:^(PXUITextView *view, PXTextContentStyler *styler, PXStylerContext *context) {
-                [view px_setText: context.text];
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXTextContentStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUITextView class]]) {
+                    PXUITextView *view = (PXUITextView *)styleable;
+                    [view px_setText:context.text];
+                }
             }],
 
             [[PXGenericStyler alloc] initWithHandlers: @{
-             @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextView *view = (PXUITextView *)context.styleable;
-
-                [view px_setTextAlignment: declaration.textAlignmentValue];
-            },
-             @"content-offset" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextView *view = (PXUITextView *)context.styleable;
-                CGSize point = declaration.sizeValue;
-                
-                [view px_setContentOffset: CGPointMake(point.width, point.height)];
-            },
-             @"content-size" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextView *view = (PXUITextView *)context.styleable;
-                CGSize size = declaration.sizeValue;
-                
-                [view px_setContentSize: size];
-            },
-             @"content-inset" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                PXUITextView *view = (PXUITextView *)context.styleable;
-                UIEdgeInsets insets = declaration.insetsValue;
-                
-                [view px_setContentInset: insets];
-            },
+                @"text-align" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextView class]]) {
+                        PXUITextView *view = (PXUITextView *)context.styleable;
+                        [view px_setTextAlignment:declaration.textAlignmentValue];
+                    }
+                },
+                @"content-offset" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextView class]]) {
+                        PXUITextView *view = (PXUITextView *)context.styleable;
+                        CGSize point = declaration.sizeValue;
+                        [view px_setContentOffset:CGPointMake(point.width, point.height)];
+                    }
+                },
+                @"content-size" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextView class]]) {
+                        PXUITextView *view = (PXUITextView *)context.styleable;
+                        CGSize size = declaration.sizeValue;
+                        [view px_setContentSize:size];
+                    }
+                },
+                @"content-inset" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    if ([context.styleable isKindOfClass:[PXUITextView class]]) {
+                        PXUITextView *view = (PXUITextView *)context.styleable;
+                        UIEdgeInsets insets = declaration.insetsValue;
+                        [view px_setContentInset:insets];
+                    }
+                },
             }],
 
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

@@ -46,34 +46,34 @@
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
+    static dispatch_once_t onceToken;
 
     dispatch_once(&onceToken, ^{
         stylers = @[
             PXTransformStyler.sharedInstance,
             PXOpacityStyler.sharedInstance,
 
-            
-            [[PXPaintStyler alloc] initWithCompletionBlock:^(PXUIRefreshControl *view, PXPaintStyler *styler, PXStylerContext *context) {
-                
-                UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
-                
-                if(color == nil)
-                {
-                    color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
-                }
-                
-                if(color)
-                {
-                    [view px_setTintColor:color];
+            [[PXPaintStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, PXPaintStyler *styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[PXUIRefreshControl class]]) {
+                    PXUIRefreshControl *view = (PXUIRefreshControl *)styleable;
+                    
+                    UIColor *color = (UIColor *)[context propertyValueForName:@"color"];
+                    
+                    if (color == nil) {
+                        color = (UIColor *)[context propertyValueForName:@"-ios-tint-color"];
+                    }
+                    
+                    if (color) {
+                        [view px_setTintColor:color];
+                    }
                 }
             }],
-            
+
             PXAnimationStyler.sharedInstance,
         ];
     });
 
-	return stylers;
+    return stylers;
 }
 
 - (NSDictionary *)viewStylersByProperty

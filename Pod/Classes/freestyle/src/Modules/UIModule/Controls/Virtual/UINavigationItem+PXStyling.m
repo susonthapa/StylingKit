@@ -325,50 +325,48 @@ static NSDictionary *PSEUDOCLASS_MAP;
     return allChildren;
 }
 
-
 - (NSArray *)viewStylers
 {
     static __strong NSArray *stylers = nil;
-	static dispatch_once_t onceToken;
-    
+    static dispatch_once_t onceToken;
+
     dispatch_once(&onceToken, ^{
         stylers = @[
-                    
-                    PXOpacityStyler.sharedInstance,
-                    PXFillStyler.sharedInstance,
-                    PXBorderStyler.sharedInstance,
-                    PXBoxShadowStyler.sharedInstance,
+            PXOpacityStyler.sharedInstance,
+            PXFillStyler.sharedInstance,
+            PXBorderStyler.sharedInstance,
+            PXBoxShadowStyler.sharedInstance,
 
-                    [[PXTextContentStyler alloc] initWithCompletionBlock:^(UINavigationItem *item, id<PXStyler> styler, PXStylerContext *context) {
-                        item.title = context.text;
-                    }],
+            [[PXTextContentStyler alloc] initWithCompletionBlock:^(id<PXStyleable> styleable, id<PXStyler> styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[UINavigationItem class]]) {
+                    UINavigationItem *item = (UINavigationItem *)styleable;
+                    item.title = context.text;
+                }
+            }],
 
-                    [[PXGenericStyler alloc] initWithHandlers: @{
-                         @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
-                            [context setPropertyValue:declaration.stringValue forName:@"transform"];
-                         },
-                         } completionBlock:^(UINavigationItem *item, id<PXStyler> styler, PXStylerContext *context) {
-                             
-                             NSString *transform = [context propertyValueForName:@"transform"];
-                             NSString *value = item.title;
-                             
-                             if ([@"uppercase" isEqualToString:transform])
-                             {
-                                 item.title = value.uppercaseString;
-                             }
-                             else if ([@"lowercase" isEqualToString:transform])
-                             {
-                                 item.title = value.lowercaseString;
-                             }
-                             else if ([@"capitalize" isEqualToString:transform])
-                             {
-                                 item.title = value.capitalizedString;
-                             }
-                         }],
+            [[PXGenericStyler alloc] initWithHandlers: @{
+                @"text-transform" : ^(PXDeclaration *declaration, PXStylerContext *context) {
+                    [context setPropertyValue:declaration.stringValue forName:@"transform"];
+                },
+            } completionBlock:^(id<PXStyleable> styleable, id<PXStyler> styler, PXStylerContext *context) {
+                if ([styleable isKindOfClass:[UINavigationItem class]]) {
+                    UINavigationItem *item = (UINavigationItem *)styleable;
+                    NSString *transform = [context propertyValueForName:@"transform"];
+                    NSString *value = item.title;
+
+                    if ([@"uppercase" isEqualToString:transform]) {
+                        item.title = value.uppercaseString;
+                    } else if ([@"lowercase" isEqualToString:transform]) {
+                        item.title = value.lowercaseString;
+                    } else if ([@"capitalize" isEqualToString:transform]) {
+                        item.title = value.capitalizedString;
+                    }
+                }
+            }],
         ];
     });
-    
-	return stylers;
+
+    return stylers;
 }
 
 - (void)updateStyleWithRuleSet:(PXRuleSet *)ruleSet context:(PXStylerContext *)context
